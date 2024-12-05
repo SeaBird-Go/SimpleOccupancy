@@ -414,6 +414,7 @@ class MonodepthOptions:
         self.parser.add_argument("--sdf", type=str, default='No', help="if set, model the sky with mlp")
         self.parser.add_argument("--beta", type=float, default=1.0, help="the initial weight of beta in sdf")
         self.parser.add_argument("--vis_sdf", type=lambda x: x.lower() == 'true', default=False, help="if set, vis sdf")
+        self.parser.add_argument("--render_rgb", help="if set, also render rgb", action="store_true")
 
 
     def parse(self):

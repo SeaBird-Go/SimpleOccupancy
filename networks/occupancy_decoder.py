@@ -118,6 +118,8 @@ class VolumeDecoder(nn.Module):
         if self.opt.position != 'No' and self.opt.position != 'embedding':
             self.meta_data = self.vox_util.get_meta_data(cam_center=torch.Tensor([[1.2475, 0.0673, 1.5356]]), camB_T_camA=None).to('cuda')
 
+        if self.opt.render_rgb:
+            self.opt.out_channel = self.opt.out_channel + 3
 
         activate_fun = nn.ReLU(inplace=True)
         if self.opt.aggregation == '3dcnn':
@@ -192,8 +194,20 @@ class VolumeDecoder(nn.Module):
     def activate_density(self, density, interval):
         return 1 - torch.exp(-density * interval)
 
-    def get_density(self, rays_o, rays_d, Voxel_feat, is_train, inputs):
+    def get_density(self, 
+                    rays_o, 
+                    rays_d, 
+                    voxel_feat, 
+                    is_train, 
+                    inputs):
 
+        if self.opt.render_rgb:
+            Voxel_feat = voxel_feat[:, :1]
+            rgb_feat = voxel_feat[:, 1:]
+        else:
+            Voxel_feat = voxel_feat
+            rgb_feat = None
+        
         eps_time = time.time()
         with torch.no_grad():
             rays_o_i = rays_o[0, ...].flatten(0, 2)  # HXWX3
@@ -260,7 +274,15 @@ class VolumeDecoder(nn.Module):
 
             weights, alphainv_cum = render.get_ray_marching_ray(alpha)
             depth = (weights * interval).sum(-1)
-            rgb_marched = 0
+
+            if self.opt.render_rgb:
+                assert rgb_feat is not None, 'please input rgb_feat'
+                rgb = self.grid_sampler(mask_rays_pts, rgb_feat)
+                rgb_cache = torch.zeros_like(rays_pts)
+                rgb_cache[~mask_outbbox] = rgb
+                rgb_marched = torch.sum(weights[..., None] * rgb_cache, -2)
+            else:
+                rgb_marched = 0
 
 
         else:
@@ -324,11 +346,18 @@ class VolumeDecoder(nn.Module):
             for scale in self.opt.scales:
                 depth, rgb_marched = self.get_density(rays_o, rays_d, Voxel_feat_list[scale], is_train, inputs)
                 self.outputs[("disp", scale)] = depth.reshape(self.opt.cam_N, self.opt.render_h, self.opt.render_w).unsqueeze(1).clamp(self.opt.min_depth, self.opt.max_depth)
+                
+                if self.opt.render_rgb:
+                    self.outputs[("render_rgb", scale)] = rgb_marched.reshape(
+                        self.opt.cam_N, self.opt.render_h, self.opt.render_w, -1).clamp(0.0, 1.0)
 
         else:
             depth, rgb_marched = self.get_density(rays_o, rays_d, Voxel_feat_list[0], is_train, inputs)
             self.outputs[("disp", 0)] = depth.reshape(self.opt.cam_N, self.opt.render_h,
                                                       self.opt.render_w).unsqueeze(1).clamp(self.opt.min_depth, self.opt.max_depth)
+            if self.opt.render_rgb:
+                self.outputs[("render_rgb", 0)] = rgb_marched.reshape(
+                    self.opt.cam_N, self.opt.render_h, self.opt.render_w, -1).clamp(0.0, 1.0)
 
             if self.opt.evl_score:
                 voxel = Voxel_feat_list[0]

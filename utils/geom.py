@@ -300,7 +300,7 @@ def unproject(cam2world, intrinsic, depth):
     # create meshgrid with image dimensions (== pixel coordinates of source image)
     y = torch.linspace(0, H - 1, H).type_as(depth).int()
     x = torch.linspace(0, W - 1, W).type_as(depth).int()
-    xx, yy = torch.meshgrid(x, y)
+    xx, yy = torch.meshgrid(x, y, indexing='ij')
     xx = torch.transpose(xx, 0, 1).repeat(bs, 1, 1)
     yy = torch.transpose(yy, 0, 1).repeat(bs, 1, 1)
 
@@ -341,7 +341,7 @@ def reproject(cam2world_src, cam2world_tar, W, H, intrinsic, depth_src, depth_ta
     # create meshgrid with image dimensions (== pixel coordinates of source image)
     y = torch.linspace(0, H - 1, H).type_as(color_tar).int()
     x = torch.linspace(0, W - 1, W).type_as(color_tar).int()
-    xx, yy = torch.meshgrid(x, y)
+    xx, yy = torch.meshgrid(x, y, indexing='ij')
     xx = torch.transpose(xx, 0, 1).repeat(bs, 1, 1)
     yy = torch.transpose(yy, 0, 1).repeat(bs, 1, 1)
 
