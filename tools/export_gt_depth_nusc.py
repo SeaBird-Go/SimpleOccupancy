@@ -19,17 +19,17 @@ import pickle
 class DepthGenerator(object):
     def __init__(self):
 
-        self.data_path = '/data/ggeoinfo/Wanshui_BEV/data/nuscenes/nuscenes'
+        self.data_path = './data/nuscenes'
         version = 'v1.0-trainval'
 
 
         self.nusc = NuScenes(version=version,
-                            dataroot=self.data_path, verbose=False)
+                            dataroot=self.data_path, verbose=True)
 
-        with open('../datasets/nusc/{}.txt'.format(sys.argv[1]), 'r') as f:
+        with open('./datasets/nusc/{}.txt'.format(sys.argv[1]), 'r') as f:
             self.data = f.readlines()
 
-        self.save_path = '/data/ggeoinfo/Wanshui_BEV/data/nuscenes/depth_test'
+        self.save_path = './data/depth_full'
         self.camera_names = ['CAM_FRONT', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT', 'CAM_FRONT_RIGHT']
 
         for camera_name in self.camera_names:
@@ -144,7 +144,7 @@ class DepthGenerator(object):
 
                 sparse_depth[valid_pixel_uv[:, 1], valid_pixel_uv[:, 0]] = valid_depth
                 sparse_depth = sparse_depth.numpy()
-                pdb.set_trace()
+                # pdb.set_trace()
 
                 np.save(os.path.join(self.save_path, camera_sample['filename'][:-4] + '.npy'), sparse_depth)
 
