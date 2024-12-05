@@ -483,7 +483,8 @@ def get_rays_of_a_view(H, W, K, c2w, ndc, inverse_y, flip_x, flip_y, mode='cente
 def get_rays(H, W, K, c2w, inverse_y, flip_x, flip_y, mode='center'):
     i, j = torch.meshgrid(
         torch.linspace(0, W - 1, W, device=c2w.device),
-        torch.linspace(0, H - 1, H, device=c2w.device))  # pytorch's meshgrid has indexing='ij'
+        torch.linspace(0, H - 1, H, device=c2w.device),
+        indexing='ij')  # pytorch's meshgrid has indexing='ij'
     i = i.t().float()
     j = j.t().float()
     if mode == 'lefttop':

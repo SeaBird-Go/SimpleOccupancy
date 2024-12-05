@@ -327,6 +327,7 @@ class Runer:
         self.step = 1
 
         if self.opt.eval_only:
+            print("============ EVALUATION ONLY ============")
             self.val()
             if self.local_rank == 0:
                 self.evaluation(evl_score=True)
@@ -530,6 +531,7 @@ class Runer:
 
                 concated_image_list = []
                 concated_depth_list = []
+                concated_render_rgb_list = []
 
                 for i in range(pred_disps.shape[0]):
 
@@ -563,6 +565,12 @@ class Runer:
                         concated_image_list.append(color)
                         concated_depth_list.append(cv2.resize(pred_depth_color.copy(), (self.opt.width, self.opt.height)))
 
+                        if self.opt.render_rgb:
+                            render_rgb = output['render_rgb'][i].cpu().permute(1, 2, 0).numpy() * 255
+                            render_rgb = render_rgb[..., [2, 1, 0]]
+                            concated_render_rgb_list.append(cv2.resize(render_rgb.copy(), (self.opt.width, self.opt.height)))
+
+
                     pred_depth = pred_depth[mask]
                     gt_depth = gt_depth[mask]
 
@@ -588,20 +596,30 @@ class Runer:
                 if self.local_rank == 0 and save_image and idx < save_num:
                     print('idx:', idx)
 
+                    vis_imgs_list = []
                     image_left_front_right = np.concatenate(
                         (concated_image_list[1], concated_image_list[0], concated_image_list[5]), axis=1)
                     image_left_rear_right = np.concatenate(
                         (concated_image_list[2], concated_image_list[3], concated_image_list[4]), axis=1)
-
                     image_surround_view = np.concatenate((image_left_front_right, image_left_rear_right), axis=0)
+                    vis_imgs_list.append(image_surround_view)
 
                     depth_left_front_right = np.concatenate(
                         (concated_depth_list[1], concated_depth_list[0], concated_depth_list[5]), axis=1)
                     depth_left_rear_right = np.concatenate(
                         (concated_depth_list[2], concated_depth_list[3], concated_depth_list[4]), axis=1)
-
                     depth_surround_view = np.concatenate((depth_left_front_right, depth_left_rear_right), axis=0)
-                    surround_view = np.concatenate((image_surround_view, depth_surround_view), axis=0)
+                    vis_imgs_list.append(depth_surround_view)
+
+                    if self.opt.render_rgb:
+                        render_rgb_left_front_right = np.concatenate(
+                            (concated_render_rgb_list[1], concated_render_rgb_list[0], concated_render_rgb_list[5]), axis=1)
+                        render_rgb_left_rear_right = np.concatenate(
+                            (concated_render_rgb_list[2], concated_render_rgb_list[3], concated_render_rgb_list[4]), axis=1)
+                        render_rgb_surround_view = np.concatenate((render_rgb_left_front_right, render_rgb_left_rear_right), axis=0)
+                        vis_imgs_list.append(render_rgb_surround_view)
+
+                    surround_view = np.concatenate(vis_imgs_list, axis=0)
 
                     # pdb.set_trace()
                     cv2.imwrite('{}/visual_rgb_depth/{}.jpg'.format(self.log_path, idx), surround_view)
@@ -1265,6 +1283,17 @@ class Runer:
                 smooth_loss = get_smooth_loss(norm_disp, color)
                 smoothness_loss = self.opt.disparity_smoothness * smooth_loss
                 singel_scale_total_loss += smoothness_loss
+            
+            if self.opt.render_rgb:
+                color = inputs[("color", 0, 0)]
+                render_rgb = outputs[(('render_rgb', 0))]
+                render_rgb = render_rgb.permute(0, 3, 1, 2)
+
+                render_rgb = F.interpolate(
+                    render_rgb, [self.opt.height, self.opt.width], mode="bilinear", align_corners=False)
+                
+                rgb_loss = F.smooth_l1_loss(render_rgb, color, size_average=True)
+                singel_scale_total_loss += rgb_loss * 10.0
 
         return singel_scale_total_loss
 
