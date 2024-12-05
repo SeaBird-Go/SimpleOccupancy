@@ -1,6 +1,6 @@
 # data
 dataset = nusc
-dataroot=/data/ggeoinfo/Wanshui_BEV/data/nuscenes
+dataroot=./data
 min_depth = 0.1
 max_depth = 52
 batch_size = 6

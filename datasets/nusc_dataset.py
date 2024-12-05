@@ -35,7 +35,7 @@ class NuscDataset(MonoDataset):
 
         self.split = 'train' if self.is_train else 'val'
         self.data_path = os.path.join(self.opt.dataroot, 'nuscenes')
-        self.depth_path = os.path.join(self.opt.dataroot, 'nuscenes/depth_full')
+        self.depth_path = os.path.join(self.opt.dataroot, 'depth_full')
         self.match_path = os.path.join(self.opt.dataroot, 'match')
         self.point_cloud_path = os.path.join(self.opt.dataroot, 'point_cloud_full')
         self.point_cloud_label_path = os.path.join(self.opt.dataroot, 'point_cloud_{}_label/label_52_0.4_surface_fix_num30_depth_52'.format(self.split))

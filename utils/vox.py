@@ -4,8 +4,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import math
-import geom
-import basic
+from utils import geom, basic
+# import geom
+# import basic
 
 
 class Vox_util(nn.Module):

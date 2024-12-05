@@ -17,12 +17,13 @@ import numpy as np
 import time
 from sys import path
 
-path.append("/home/wsgan/project/bev/SimpleOccupancy/utils")
-import geom
-import vox
-import basic
-import render
-import mesh
+# path.append("/home/wsgan/project/bev/SimpleOccupancy/utils")
+# import geom
+# import vox
+# import basic
+# import render
+# import mesh
+from utils import geom, basic, render, mesh, vox
 
 
 class VolumeDecoder(nn.Module):
@@ -228,7 +229,7 @@ class VolumeDecoder(nn.Module):
         elif self.opt.render_type == 'density':
 
 
-            if self.opt.vis_sdf:
+            if self.opt.vis_sdf and not is_train:
 
                 sample_rate = 4
 

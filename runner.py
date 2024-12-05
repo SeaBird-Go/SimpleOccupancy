@@ -298,7 +298,7 @@ class Runer:
             os.makedirs(os.path.join(self.log_path, 'code'), exist_ok=True)
 
             # back up files
-            source1 = './runer.py'
+            source1 = './runner.py'
             source3 = './run.py'
             source4 = './options.py'
             source13 = './run.sh'

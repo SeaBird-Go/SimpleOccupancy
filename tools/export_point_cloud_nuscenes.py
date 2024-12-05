@@ -19,21 +19,21 @@ import pickle
 class DepthGenerator(object):
     def __init__(self):
 
-        self.data_path = '/data/ggeoinfo/Wanshui_BEV/data/nuscenes/nuscenes'
+        self.data_path = './data/nuscenes'
         version = 'v1.0-trainval'
 
         self.nusc = NuScenes(version=version,
-                            dataroot=self.data_path, verbose=False)
+                            dataroot=self.data_path, verbose=True)
 
-        with open('../datasets/nusc/{}.txt'.format(sys.argv[1]), 'r') as f:
+        with open('./datasets/nusc/{}.txt'.format(sys.argv[1]), 'r') as f:
             self.data = f.readlines()
 
-        self.save_path = '/data/ggeoinfo/Wanshui_BEV/data/nuscenes/point_cloud_full'
+        self.save_path = './data/point_cloud_full'
         # self.camera_names = ['CAM_FRONT', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT', 'CAM_FRONT_RIGHT']
         self.camera_names = ['CAM_FRONT', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_BACK', 'CAM_BACK_RIGHT', 'CAM_FRONT_RIGHT']
 
-        # for camera_name in self.camera_names:
-        #     os.makedirs(os.path.join(self.save_path, 'samples', camera_name), exist_ok=True)
+        for camera_name in self.camera_names:
+            os.makedirs(os.path.join(self.save_path, 'samples', camera_name), exist_ok=True)
 
     def __call__(self, num_workers=1): # 8
         print('generating nuscene depth maps from LiDAR projections')
@@ -77,27 +77,26 @@ class DepthGenerator(object):
             homo_ego_lidar_points = torch.from_numpy(homo_ego_lidar_points).float()
 
 
-            for cam in self.camera_names:
-                camera_sample = self.nusc.get('sample_data', rec['data'][cam])
-                car_egopose = self.nusc.get(
-                    'ego_pose', camera_sample['ego_pose_token'])
-                egopose_rotation = Quaternion(car_egopose['rotation']).inverse
-                egopose_translation = - \
-                    np.array(car_egopose['translation'])[:, None]
-                world_to_car_egopose = np.vstack([
-                    np.hstack((egopose_rotation.rotation_matrix,
-                               egopose_rotation.rotation_matrix @ egopose_translation)),
-                    np.array([0, 0, 0, 1])
-                ])
+            # for cam in self.camera_names:
+            #     camera_sample = self.nusc.get('sample_data', rec['data'][cam])
+            #     car_egopose = self.nusc.get(
+            #         'ego_pose', camera_sample['ego_pose_token'])
+            #     egopose_rotation = Quaternion(car_egopose['rotation']).inverse
+            #     egopose_translation = - \
+            #         np.array(car_egopose['translation'])[:, None]
+            #     world_to_car_egopose = np.vstack([
+            #         np.hstack((egopose_rotation.rotation_matrix,
+            #                    egopose_rotation.rotation_matrix @ egopose_translation)),
+            #         np.array([0, 0, 0, 1])
+            #     ])
 
-                print('egopose_rotation', egopose_rotation)
-                print('egopose_translation', egopose_translation)
-                print('world_to_car_egopose', world_to_car_egopose)
+            #     print('egopose_rotation', egopose_rotation)
+            #     print('egopose_translation', egopose_translation)
+            #     print('world_to_car_egopose', world_to_car_egopose)
 
-
-
-            pdb.set_trace()
-            # np.save(os.path.join(self.save_path, point_cloud_name + '.npy'), homo_ego_lidar_points)
+            cam_sample = self.nusc.get('sample_data', rec['data']['CAM_FRONT'])
+            # pdb.set_trace()
+            np.save(os.path.join(self.save_path, cam_sample['filename'][:-4] + '.npy'), homo_ego_lidar_points)
 
             # 将点云存成当前帧 CAM_FRONT 同名
             print('finish processing index = {:06d}'.format(index))
